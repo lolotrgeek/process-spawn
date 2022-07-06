@@ -1,0 +1,14 @@
+{
+  "name": "process-spawn",
+  "version": "0.0.1",
+  "description": "Start and monitor multiple instances of the same process.",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "lolotrgeek",
+  "license": "MIT",
+  "dependencies": {
+    "table": "^6.8.0"
+  }
+}
