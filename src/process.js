@@ -1,24 +1,45 @@
 const fs = require('fs')
 const { fork } = require('child_process')
 const { dashboard } = require('./dashboard')
+const path = require("path")
 
 const debug = false
 let nodes = []
 
-function set_node(path) {
+let beginning = "process.on('message', message => {if (message.start) {try {"
+let end = "} catch (error) {process.send(`process ${error}`)}}})"
+
+function set_node(file) {
     try {
-        if(typeof path !== 'string') throw "path must be a string!"
-        if(path.split('.').pop() !== 'js') throw "path must be a .js file!"
-        fs.accessSync(path)
-        return { file }
+        if (typeof file !== "string") throw ("file must be a string!")
+        if (file.split('.').pop() !== 'js') throw ("file must be a .js file!")
+        fs.accessSync(file)
+        let tmp_file = `${path.parse(file).name}-process.js`
+        try {
+            fs.accessSync(tmp_file)
+        } catch (error) {
+            let data = fs.readFileSync(file, 'utf8')
+            let middle = data.replace(/console.log/g, "process.send")
+            let result = beginning + middle + end
+            fs.writeFileSync(tmp_file, result, 'utf8') 
+        }
+        return { tmp_file }
+    } catch (error) {
+        throw (error)
+    }
+
+}
+
+function end_node(file) {
+    try {
+        fs.unlinkSync(`${path.parse(file).name}-process.js`)
     } catch (error) {
         throw(error)
     }
-    
 }
 
-function start_node({ file }) {
-    let node = fork(file, { stdio: ['ignore', 'ignore', 'ignore', 'ipc'] })
+function start_node({ tmp_file }) {
+    let node = fork(tmp_file, { stdio: ['ignore', 'ignore', 'ignore', 'ipc'] })
     node.on('message', dashboard)
     node.on("close", code => console.log(`child node process exited with code ${code}`))
     node.send({ start: true })
@@ -27,14 +48,15 @@ function start_node({ file }) {
 
 /**
  * 
- * @param {string} path to a `.js` file
+ * @param {string} file to a `.js` file
  * @param {integer} number how many instances to spawn
  */
-function spawn_node(path, number) {
+function spawn_node(file, number) {
     if (debug) console.log(`Starting node ${nodes.length + 1}/${number}`)
-    start_node(set_node(path))
-    if (nodes.length < number) setTimeout(() => spawn_node(number), 500)
-
+    start_node(set_node(file))
+    if (nodes.length < number) setTimeout(() => spawn_node(file, number), 500)
+    else end_node(file)
 }
+
 
 module.exports = { spawn_node }
