@@ -18,6 +18,7 @@ function set_node(file) {
         try {
             fs.accessSync(tmp_file)
         } catch (error) {
+            // console.log("making...")
             let data = fs.readFileSync(file, 'utf8')
             let middle = data.replace(/console.log/g, "process.send")
             let result = beginning + middle + end
@@ -55,7 +56,7 @@ function spawn_node(file, number) {
     if (debug) console.log(`Starting node ${nodes.length + 1}/${number}`)
     start_node(set_node(file))
     if (nodes.length < number) setTimeout(() => spawn_node(file, number), 500)
-    else end_node(file)
+    else setTimeout(() => end_node(file), 1000)
 }
 
 
