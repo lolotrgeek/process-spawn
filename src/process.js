@@ -42,7 +42,7 @@ function end_node(file) {
 
 function start_node({ tmp_file }, listener) {
     let node = fork(tmp_file, { stdio: ['ignore', 'ignore', 'ignore', 'ipc'] })
-    node.on('message', listener ? dashboard : listener)
+    node.on('message', listener ? listener : dashboard)
     node.on("close", code => console.log(`child node process exited with code ${code}`))
     node.send({ start: true })
     nodes.push(node)
