@@ -1,4 +1,3 @@
-const { spawn_node } = require("../main")
-
+const { Spawner} = require("../main")
 let file = "testee.js"
-spawn_node(file, 3)
+new Spawner().spawn_node(file, 3)

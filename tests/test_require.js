@@ -1,3 +1,3 @@
-const { spawn_node } = require("../main")
+const { Spawner } = require("../main")
 
-spawn_node("./testee_require.js", 1)
+new Spawner().spawn_node("./testee_require.js", 1)
