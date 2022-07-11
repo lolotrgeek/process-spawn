@@ -7,7 +7,8 @@ const debug = false
 let nodes = []
 
 let beginning = "process.on('message', message => {if (message.start) {try {"
-let end = "} catch (error) {process.send(`process ${error}`)}}})"
+let log = "\n console.log = function() {return process.send(Array.prototype.slice.call(arguments).map(arg => typeof arg === 'object' ? JSON.stringify(arg) : arg).join(''))}; \n"
+let end = "\n} catch (error) {process.send(`process ${error}`)}}})"
 
 function set_node(file) {
     try {
@@ -20,7 +21,7 @@ function set_node(file) {
         } catch (error) {
             // console.log("making...")
             let data = fs.readFileSync(file, 'utf8')
-            let middle = data.replace(/console.log/g, "process.send")
+            let middle = log + data
             let result = beginning + middle + end
             fs.writeFileSync(tmp_file, result, 'utf8') 
         }
@@ -49,7 +50,7 @@ function start_node({ tmp_file }) {
 
 /**
  * 
- * @param {string} file to a `.js` file
+ * @param {string} file path to a `.js` file
  * @param {integer} number how many instances to spawn
  */
 function spawn_node(file, number) {
