@@ -63,4 +63,4 @@ function spawn_node(file, number, listener) {
 }
 
 
-module.exports = { spawn_node }
+module.exports = { spawn_node, end_node }

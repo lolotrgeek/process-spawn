@@ -1,3 +1,3 @@
-const { spawn_node } = require("./src/process")
+const { spawn_node, end_node } = require("./src/process")
 
-module.exports = { spawn_node }
+module.exports = { spawn_node, end_node }
