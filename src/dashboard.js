@@ -19,7 +19,12 @@ function dashboard(message) {
         console.clear()
         console.log(table(dash))
     } else {
-        console.log(message)
+        try {
+            let data = JSON.parse(message)
+            console.log(...data)
+        } catch (error) {
+            console.log(message)
+        }
     }
 }
 

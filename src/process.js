@@ -7,7 +7,7 @@ const debug = false
 let nodes = []
 
 let beginning = "process.on('message', message => {if (message.start) {try {"
-let log = "\n console.log = function() {return process.send(Array.prototype.slice.call(arguments).map(arg => typeof arg === 'object' ? JSON.stringify(arg) : arg).join(''))}; \n"
+let log = "\n console.log = function() {process.send(JSON.stringify(Object.values(arguments)))}; \n"
 let end = "\n} catch (error) {process.send(`process ${error}`)}}})"
 
 function set_node(file) {
