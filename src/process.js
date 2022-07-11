@@ -44,7 +44,7 @@ function cleanup(file) {
 
 function end_node(node) {
     try {
-        node.send({ end: false })
+        node.send({ end: true })
         fs.unlinkSync(node.spawnargs[1])
     } catch (error) { }
 }
