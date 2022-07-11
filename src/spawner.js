@@ -1,5 +1,6 @@
 const fs = require('fs')
 const { fork } = require('child_process')
+const { randomUUID } = require("crypto")
 const { dashboard } = require('./dashboard')
 const path = require("path")
 
@@ -18,7 +19,7 @@ class Spawner {
             if (typeof file !== "string") throw ("file must be a string!")
             if (file.split('.').pop() !== 'js') throw ("file must be a .js file!")
             fs.accessSync(file)
-            let tmp_file = `${path.parse(file).name}-process.js`
+            let tmp_file = `${path.parse(file).name}-${randomUUID()}.js`
             try {
                 fs.accessSync(tmp_file)
             } catch (error) {
@@ -35,13 +36,6 @@ class Spawner {
         }
 
     }
-    cleanup(file) {
-        try {
-            fs.unlinkSync(`${path.parse(file).name}-process.js`)
-        } catch (error) {
-            console.log(error)
-        }
-    }
 
     end_node(node) {
         try {
@@ -50,8 +44,16 @@ class Spawner {
         } catch (error) { }
     }
 
+    started_node(node) {
+        node.started = true
+        let found_node_index = this.nodes.findIndex(stored_node => stored_node.pid === node.pid)
+        if (found_node_index) this.nodes[found_node_index] = node
+        if (this.nodes.every(node => node.started === true)) fs.unlinkSync(node.spawnargs[1])
+    }
+
     handle_message(message, node, listener) {
-        if (listener) listener(message, node)
+        if (typeof message === 'object' && message.started) this.started_node(node)
+        else if (listener) listener(message, node)
         else dashboard(message)
     }
 
@@ -73,7 +75,6 @@ class Spawner {
         console.log(`Starting node ${this.nodes.length + 1}/${number}`)
         this.start_node(this.set_node(file), listener)
         if (this.nodes.length < number) setTimeout(() => this.spawn_node(file, number, listener), 500)
-        else if (this.nodes.length + 1 === number) this.cleanup(file)
     }
 }
 
