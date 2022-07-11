@@ -40,9 +40,9 @@ function end_node(file) {
     }
 }
 
-function start_node({ tmp_file }) {
+function start_node({ tmp_file }, listener) {
     let node = fork(tmp_file, { stdio: ['ignore', 'ignore', 'ignore', 'ipc'] })
-    node.on('message', dashboard)
+    node.on('message', listener ? dashboard : listener)
     node.on("close", code => console.log(`child node process exited with code ${code}`))
     node.send({ start: true })
     nodes.push(node)
@@ -52,11 +52,12 @@ function start_node({ tmp_file }) {
  * 
  * @param {string} file path to a `.js` file
  * @param {integer} number how many instances to spawn
+ * @param {function} [listener] optional callback for handling messages 
  */
-function spawn_node(file, number) {
+function spawn_node(file, number, listener) {
     if (debug) console.log(`Starting node ${nodes.length + 1}/${number}`)
-    start_node(set_node(file))
-    if (nodes.length < number) setTimeout(() => spawn_node(file, number), 500)
+    start_node(set_node(file), listener)
+    if (nodes.length < number) setTimeout(() => spawn_node(file, number, listener), 500)
     else setTimeout(() => end_node(file), 1000)
 }
 
