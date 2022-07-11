@@ -21,8 +21,9 @@ function set_node(file) {
         } catch (error) {
             // console.log("making...")
             let data = fs.readFileSync(file, 'utf8')
-            let middle = log + data
-            let result = beginning + middle + end
+            // TODO: dynamic require pathing
+            let middle = data.replace('require("..', 'require(".').replace("require('..", "require('.")
+            let result = beginning + log + middle + end
             fs.writeFileSync(tmp_file, result, 'utf8') 
         }
         return { tmp_file }
