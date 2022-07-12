@@ -4,8 +4,9 @@ const { randomUUID } = require("crypto")
 const { dashboard } = require('./dashboard')
 const path = require("path")
 
-let beginning = "process.on('message', message => {if(message.end) process.kill(); if (message.start) {try {"
-let start = "\n process.send({started: true})\n"
+// NOTE: may want to consider removing the `{killed: process.pid}` process.send if node is too chatty.
+let beginning = "process.on('message', message => {\nif(message.end) {process.send('{killed: process.pid}');process.kill()}; \n if (message.start) {try {"
+let start = "\n process.send({started: process.pid})\n"
 let log = "\n console.log = function() {process.send(JSON.stringify(Object.values(arguments)))}; \n"
 let end = "\n} catch (error) {process.send(`process ${error}`)}}})"
 
@@ -29,6 +30,7 @@ class Spawner {
                 let middle = data.replace('require("..', 'require(".').replace("require('..", "require('.")
                 let result = beginning + start + log + middle + end
                 fs.writeFileSync(tmp_file, result, 'utf8')
+                if (this.debug) fs.writeFileSync(`${path.parse(file).name}-debug.js`, result, 'utf8')
             }
             return { tmp_file }
         } catch (error) {
@@ -40,27 +42,35 @@ class Spawner {
     end_node(node) {
         try {
             node.send({ end: true })
-            fs.unlinkSync(node.spawnargs[1])
-        } catch (error) { }
+        } catch (error) {
+        }
     }
 
-    started_node(node) {
+    handle_started(node) {
         node.started = true
-        let found_node_index = this.nodes.findIndex(stored_node => stored_node.pid === node.pid)
+        let found_node_index = this.nodes.findIndex(stored_node => stored_node.id === node.id)
         if (found_node_index) this.nodes[found_node_index] = node
         if (this.nodes.every(node => node.started === true)) fs.unlinkSync(node.spawnargs[1])
     }
 
     handle_message(message, node, listener) {
-        if (typeof message === 'object' && message.started) this.started_node(node)
-        else if (listener) listener(message, node)
+        if (typeof message === 'object' && message.started) this.handle_started(node)
+        if (typeof message === 'object' && message.killed && this.debug === 'status') listener(message, node)
+        else if (listener && node) listener(message, node)
         else dashboard(message)
+    }
+
+    handle_close(code, node) {
+        let found_node_index = this.nodes.findIndex(stored_node => stored_node.id === node.id)
+        if (found_node_index) this.nodes[found_node_index].killed = true
+        console.log(`child ${node.id} node process exited with code ${code}`)
     }
 
     start_node({ tmp_file }, listener) {
         let node = fork(tmp_file, { stdio: ['ignore', 'ignore', 'ignore', 'ipc'] })
+        node.id = randomUUID()
         node.on('message', message => this.handle_message(message, node, listener))
-        node.on("close", code => console.log(`child node process exited with code ${code}`))
+        node.on("close", code => this.handle_close(code, node))
         node.send({ start: true })
         this.nodes.push(node)
     }
@@ -69,7 +79,7 @@ class Spawner {
      * 
      * @param {string} file path to a `.js` file
      * @param {integer} number how many instances to spawn
-     * @param {function} [listener] optional callback for handling messages 
+     * @param {function} [listener] optional callback for handling messages `(message, node?)`
      */
     spawn_node(file, number, listener) {
         console.log(`Starting node ${this.nodes.length + 1}/${number}`)

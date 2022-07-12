@@ -1,13 +1,26 @@
-const { Spawner} = require("../main")
+const { Spawner } = require("../main")
 const { dirname } = require('path')
-let file = dirname(require.main.filename) +"/testee.js"
+let file = dirname(require.main.filename) + "/testee.js"
 console.log(file)
 const spawner = new Spawner()
-spawner.spawn_node(file, 3, (message, node) => {
-    if (spawner.nodes.every(node => node.started === true)) setTimeout(() => {
-        console.log("ending:", node.spawnargs[1])
-        spawner.end_node(node)
-        
-    },1000)
-    if(spawner.nodes.every(node => node.killed === true)) process.exit()
+spawner.debug = 'status'
+let number = 3
+spawner.spawn_node(file, number, (message) => {
+    if (spawner.nodes.every(node => node.killed === true)) return process.exit()
 })
+
+
+function killer() {
+    if(spawner.nodes.length !== number) setTimeout(killer, 1000)
+    else if (spawner.nodes.every(node => node.started === true)) {
+        spawner.nodes.forEach(node => {
+            if (node.killed === false) {
+                console.log("ending:", node.pid)
+                spawner.end_node(node)
+            }
+        })
+        console.log(spawner.nodes.map(node => node.killed))
+    } else setTimeout(killer, 1000)
+}
+
+killer()
