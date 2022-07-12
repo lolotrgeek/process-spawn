@@ -12,7 +12,7 @@ let end = "\n} catch (error) {process.send(`process ${error}`)}}})"
 
 class Spawner {
     constructor() {
-        this.debug = false // spawn, status, file, path
+        this.debug = false // spawn, status, exit, file, path
         this.complete = false // set `true` to exit main process after all spawned processes are closed
         this.nodes = []
 
@@ -26,8 +26,8 @@ class Spawner {
 
         this.exitHandler = (options, exitCode) => {
             this.nodes.forEach(node => { try { fs.unlinkSync(node.spawnargs[1]) } catch { } })
-            if (options.cleanup) console.log('clean')
-            if (exitCode || exitCode === 0) console.log(exitCode)
+            if (options.cleanup && this.debug === 'exit') console.log('clean')
+            if (exitCode || exitCode === 0 && this.debug === 'exit') console.log(exitCode)
             if (options.exit) process.exit()
         }
 
@@ -97,13 +97,13 @@ class Spawner {
 
     handle_message(message, node, listener) {
         if (typeof message === 'object' && message.started) this.handle_started(node)
-        if (typeof message === 'object' && message.killed && this.debug === 'status') console.log(message)
+        if (typeof message === 'object' && message.killed && this.debug === 'exit') console.log(message)
         else if (listener && node) listener(message, node)
         else dashboard(message)
     }
 
     handle_close(code, node) {
-        if(this.debug === 'status') console.log(`child ${node.id} node process exited with code ${code}`)
+        if(this.debug === 'exit') console.log(`child ${node.id} node process exited with code ${code}`)
         if (this.complete && this.nodes.every(stored_node => stored_node.connected === false)) {
             if(this.debug === 'status') console.log("Completed")
             process.exit()
