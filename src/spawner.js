@@ -5,7 +5,7 @@ const { dashboard } = require('./dashboard')
 const path = require("path")
 
 // NOTE: may want to consider removing the `{killed: process.pid}` process.send if node is too chatty.
-let beginning = "process.on('message', message => {\nif(message.end) {process.send('{killed: process.pid}');process.kill()}; \n if (message.start) {try {"
+let beginning = "process.on('message', message => {\nif(message.end) {process.send({killed: process.pid});process.kill()}; \n if (message.start) {try {"
 let start = "\n process.send({started: process.pid})\n"
 let log = "\n console.log = function() {process.send(JSON.stringify(Object.values(arguments)))}; \n"
 let end = "\n} catch (error) {process.send(`process ${error}`)}}})"
@@ -13,7 +13,9 @@ let end = "\n} catch (error) {process.send(`process ${error}`)}}})"
 class Spawner {
     constructor() {
         this.debug = false // spawn, status, file, path
+        this.complete = false // set `true` to exit main process after all spawned processes are closed
         this.nodes = []
+
         if (this.debug === 'path') {
             console.log("Source directory:", __dirname)
             console.log("Callee Directory", module.parent.path)
@@ -95,15 +97,17 @@ class Spawner {
 
     handle_message(message, node, listener) {
         if (typeof message === 'object' && message.started) this.handle_started(node)
-        if (typeof message === 'object' && message.killed && this.debug === 'status') listener(message, node)
+        if (typeof message === 'object' && message.killed && this.debug === 'status') console.log(message)
         else if (listener && node) listener(message, node)
         else dashboard(message)
     }
 
     handle_close(code, node) {
-        let found_node_index = this.nodes.findIndex(stored_node => stored_node.id === node.id)
-        if (found_node_index) this.nodes[found_node_index].killed = true
-        console.log(`child ${node.id} node process exited with code ${code}`)
+        if(this.debug === 'status') console.log(`child ${node.id} node process exited with code ${code}`)
+        if (this.complete && this.nodes.every(stored_node => stored_node.connected === false)) {
+            if(this.debug === 'status') console.log("Completed")
+            process.exit()
+        }
     }
 
     start_node({ tmp_file }, listener) {
