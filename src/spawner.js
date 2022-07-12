@@ -85,7 +85,7 @@ class Spawner {
                 fs.writeFileSync(tmp_file, result, 'utf8')
                 if (this.debug === 'file') fs.writeFileSync(`${path.parse(file).name}-debug.js`, result, 'utf8')
             }
-            return { tmp_file }
+            return { tmp_file, name: path_parsed.name }
         } catch (error) {
             throw (error)
         }
@@ -121,9 +121,10 @@ class Spawner {
         }
     }
 
-    start_node({ tmp_file }, listener) {
+    start_node({ tmp_file, name }, listener) {
         let node = fork(tmp_file, { stdio: ['ignore', 'ignore', 'ignore', 'ipc'] })
         node.id = randomUUID()
+        node.name = name
         node.on('message', message => this.handle_message(message, node, listener))
         node.on("close", code => this.handle_close(code, node))
         node.send({ start: true })
