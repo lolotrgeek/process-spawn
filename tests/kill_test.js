@@ -1,6 +1,6 @@
 const { Spawner } = require("../main")
-const { dirname } = require('path')
-let file = dirname(require.main.filename) + "/testee.js"
+
+let file = "./files/testee.js"
 console.log(file)
 const spawner = new Spawner()
 spawner.debug = 'status'
