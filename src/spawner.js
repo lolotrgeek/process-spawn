@@ -71,7 +71,7 @@ class Spawner {
     set_node(file) {
         try {
             if (typeof file !== "string") throw ("file must be a string!")
-            if (file.split('.').pop() !== 'js') throw ("file must be a .js file!")
+            if (file.split('.').pop() !== 'js') throw (`${file} file must be a .js file!`)
             file = this.resolve_path(file)
             fs.accessSync(file)
             let path_parsed = path.parse(file)
