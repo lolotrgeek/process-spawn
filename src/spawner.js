@@ -12,36 +12,54 @@ let end = "\n} catch (error) {process.send(`process ${error}`)}}})"
 
 class Spawner {
     constructor() {
-        this.debug = false // spawn, status, file
+        this.debug = false // spawn, status, file, path
         this.nodes = []
+        if (this.debug === 'path') {
+            console.log("Source directory:", __dirname)
+            console.log("Callee Directory", module.parent.path)
+            console.log("Caller Directory", require.main.path)
+        }
+
         process.stdin.resume();//so the program will not close instantly
 
         this.exitHandler = (options, exitCode) => {
-            this.nodes.forEach(node => {try {fs.unlinkSync(node.spawnargs[1])}catch{}})
+            this.nodes.forEach(node => { try { fs.unlinkSync(node.spawnargs[1]) } catch { } })
             if (options.cleanup) console.log('clean')
             if (exitCode || exitCode === 0) console.log(exitCode)
             if (options.exit) process.exit()
         }
-        
+
         //do something when app is closing
-        process.on('exit', this.exitHandler.bind(null,{cleanup:true}))
-        
+        process.on('exit', this.exitHandler.bind(null, { cleanup: true }))
+
         //catches ctrl+c event
-        process.on('SIGINT', this.exitHandler.bind(null, {exit:true}))
-        
+        process.on('SIGINT', this.exitHandler.bind(null, { exit: true }))
+
         // catches "kill pid" (for example: nodemon restart)
-        process.on('SIGUSR1', this.exitHandler.bind(null, {exit:true}))
-        process.on('SIGUSR2', this.exitHandler.bind(null, {exit:true}))
-        
+        process.on('SIGUSR1', this.exitHandler.bind(null, { exit: true }))
+        process.on('SIGUSR2', this.exitHandler.bind(null, { exit: true }))
+
         //catches uncaught exceptions
-        process.on('uncaughtException', this.exitHandler.bind(null, {exit:true}))
-        
+        process.on('uncaughtException', this.exitHandler.bind(null, { exit: true }))
+
+    }
+
+    resolve_path(file) {
+        if (!path.isAbsolute(file)) {
+            if (file[0] === '.') file.substring(1)
+            if (file[0] === '.' && file[1] === "/") file.substring(2)
+            let resolved = require.main.path + "/" + file
+            console.log("resolved", resolved)
+            if (path.isAbsolute(resolved)) return resolved
+        }
+        else return file
     }
 
     set_node(file) {
         try {
             if (typeof file !== "string") throw ("file must be a string!")
             if (file.split('.').pop() !== 'js') throw ("file must be a .js file!")
+            file = this.resolve_path(file)
             fs.accessSync(file)
             let path_parsed = path.parse(file)
             let tmp_file = `${path_parsed.dir}/${path_parsed.name}-${randomUUID()}.js`
@@ -104,7 +122,7 @@ class Spawner {
      * @param {function} [listener] optional callback for handling messages `(message, node?)`
      */
     spawn_node(file, number, listener) {
-        if(this.debug === 'spawn') console.log(`Starting node ${this.nodes.length + 1}/${number}`)
+        if (this.debug === 'spawn') console.log(`Starting node ${this.nodes.length + 1}/${number}`)
         this.start_node(this.set_node(file), listener)
         if (this.nodes.length < number) setTimeout(() => this.spawn_node(file, number, listener), 500)
     }
@@ -117,6 +135,7 @@ class Spawner {
      */
     spawn_directory(directory, listener, ignore) {
         try {
+            directory = this.resolve_path(directory)
             let files = fs.readdirSync(directory)
             files.forEach((file, i) => {
                 if (typeof ignore === 'string' && file === ignore) files.splice(i)
