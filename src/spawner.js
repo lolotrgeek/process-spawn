@@ -11,9 +11,20 @@ let log = "\n console.log = function() {process.send(JSON.stringify(Object.value
 let end = "\n} catch (error) {process.send(`process ${error}`)}}})"
 
 class Spawner {
+    /**
+     * Provides methods and parameters to spawn processes.
+     * @param debug set logging level with the following: `spawn`, `status`, `exit`, `file`, `path`
+     * @param complete set `true` to exit main process after all spawned processes have closed
+     */
     constructor() {
-        this.debug = false // spawn, status, exit, file, path
-        this.complete = false // set `true` to exit main process after all spawned processes are closed
+        /**
+         * @param debug set logging level with the following: `spawn`, `status`, `exit`, `file`, `path`
+         */
+        this.debug = false
+        /**
+         * @param complete set `true` to exit main process after all spawned processes have closed
+         */
+        this.complete = false
         this.nodes = []
 
         if (this.debug === 'path') {
