@@ -46,8 +46,8 @@ class Spawner {
 
     resolve_path(file) {
         if (!path.isAbsolute(file)) {
-            if (file[0] === '.') file.substring(1)
-            if (file[0] === '.' && file[1] === "/") file.substring(2)
+            if (file[0] === '.') file = file.substring(1)
+            if (file[0] === '.' && file[1] === "/")file = file.substring(2)
             let resolved = require.main.path + "/" + file
             console.log("resolved", resolved)
             if (path.isAbsolute(resolved)) return resolved
