@@ -43,15 +43,14 @@ class Spawner {
             if (typeof file !== "string") throw ("file must be a string!")
             if (file.split('.').pop() !== 'js') throw ("file must be a .js file!")
             fs.accessSync(file)
-            let tmp_file = `${path.parse(file).name}-${randomUUID()}.js`
+            let path_parsed = path.parse(file)
+            let tmp_file = `${path_parsed.dir}/${path_parsed.name}-${randomUUID()}.js`
             try {
                 fs.accessSync(tmp_file)
             } catch (error) {
                 // console.log("making...")
                 let data = fs.readFileSync(file, 'utf8')
-                // TODO: dynamic require pathing
-                let middle = data.replace('require("..', 'require(".').replace("require('..", "require('.")
-                let result = beginning + start + log + middle + end
+                let result = beginning + start + log + data + end
                 fs.writeFileSync(tmp_file, result, 'utf8')
                 if (this.debug === 'file') fs.writeFileSync(`${path.parse(file).name}-debug.js`, result, 'utf8')
             }
