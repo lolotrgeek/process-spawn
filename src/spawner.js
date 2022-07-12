@@ -12,9 +12,32 @@ let end = "\n} catch (error) {process.send(`process ${error}`)}}})"
 
 class Spawner {
     constructor() {
-        this.debug = false
+        this.debug = false // spawn, status, file
         this.nodes = []
+        process.stdin.resume();//so the program will not close instantly
+
+        this.exitHandler = (options, exitCode) => {
+            this.nodes.forEach(node => {try {fs.unlinkSync(node.spawnargs[1])}catch{}})
+            if (options.cleanup) console.log('clean')
+            if (exitCode || exitCode === 0) console.log(exitCode)
+            if (options.exit) process.exit()
+        }
+        
+        //do something when app is closing
+        process.on('exit', this.exitHandler.bind(null,{cleanup:true}))
+        
+        //catches ctrl+c event
+        process.on('SIGINT', this.exitHandler.bind(null, {exit:true}))
+        
+        // catches "kill pid" (for example: nodemon restart)
+        process.on('SIGUSR1', this.exitHandler.bind(null, {exit:true}))
+        process.on('SIGUSR2', this.exitHandler.bind(null, {exit:true}))
+        
+        //catches uncaught exceptions
+        process.on('uncaughtException', this.exitHandler.bind(null, {exit:true}))
+        
     }
+
     set_node(file) {
         try {
             if (typeof file !== "string") throw ("file must be a string!")
@@ -82,9 +105,28 @@ class Spawner {
      * @param {function} [listener] optional callback for handling messages `(message, node?)`
      */
     spawn_node(file, number, listener) {
-        console.log(`Starting node ${this.nodes.length + 1}/${number}`)
+        if(this.debug === 'spawn') console.log(`Starting node ${this.nodes.length + 1}/${number}`)
         this.start_node(this.set_node(file), listener)
         if (this.nodes.length < number) setTimeout(() => this.spawn_node(file, number, listener), 500)
+    }
+
+    /**
+     * 
+     * @param {*} directory path of directory with files to spawn
+     * @param {function} [listener] callback for handling messages 
+     * @param {string | array} [ignore] name of file or array of files to ignore
+     */
+    spawn_directory(directory, listener, ignore) {
+        try {
+            let files = fs.readdirSync(directory)
+            files.forEach((file, i) => {
+                if (typeof ignore === 'string' && file === ignore) files.splice(i)
+                if (Array.isArray(ignore)) ignore.forEach(file_to_ignore => { if (typeof file_to_ignore === 'string') files.splice(i) })
+                this.spawn_node(directory+"/"+file, 1, listener)
+            })
+        } catch (error) {
+            console.log(error)
+        }
     }
 }
 
