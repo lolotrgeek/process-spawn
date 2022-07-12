@@ -30,7 +30,7 @@ class Spawner {
                 let middle = data.replace('require("..', 'require(".').replace("require('..", "require('.")
                 let result = beginning + start + log + middle + end
                 fs.writeFileSync(tmp_file, result, 'utf8')
-                if (this.debug) fs.writeFileSync(`${path.parse(file).name}-debug.js`, result, 'utf8')
+                if (this.debug === 'file') fs.writeFileSync(`${path.parse(file).name}-debug.js`, result, 'utf8')
             }
             return { tmp_file }
         } catch (error) {
