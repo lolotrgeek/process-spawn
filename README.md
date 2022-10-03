@@ -21,6 +21,5 @@ spawner.spawn_directory("./files", 5)
 
 ## Todo
 - create a table for each node to dump it's log into
-- create a test runner with this lib
 - re-write tests
 - setup CI/CD
